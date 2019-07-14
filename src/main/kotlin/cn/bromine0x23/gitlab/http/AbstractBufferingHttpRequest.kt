@@ -13,18 +13,14 @@ abstract class AbstractBufferingHttpRequest : AbstractHttpRequest() {
 
 	private var bufferedOutput: ByteArrayOutputStream = ByteArrayOutputStream(1024)
 
-	override fun doGetBody(headers: HttpHeaders): OutputStream {
-		return bufferedOutput
-	}
+	override fun doGetBody(headers: HttpHeaders): OutputStream = bufferedOutput
 
 	override fun doExecute(headers: HttpHeaders): HttpResponse {
 		val bodyContent = bufferedOutput.toByteArray() as ByteArray
 		if (headers.contentLength < 0) {
 			headers.contentLength = bodyContent.size
 		}
-		val response = doExecute(headers, bodyContent)
-		bufferedOutput = ByteArrayOutputStream(0)
-		return response
+		return doExecute(headers, bodyContent).also { this.bufferedOutput = ByteArrayOutputStream(0) }
 	}
 
 	protected abstract fun doExecute(headers: HttpHeaders, bodyContent: ByteArray): HttpResponse

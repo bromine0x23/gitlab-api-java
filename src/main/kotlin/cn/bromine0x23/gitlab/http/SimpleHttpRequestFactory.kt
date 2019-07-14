@@ -12,7 +12,7 @@ import java.net.URI
 import java.net.URL
 import java.time.Duration
 
-class SimpleHttpRequestFactory : HttpRequestFactory {
+open class SimpleHttpRequestFactory : HttpRequestFactory {
 
 	var proxy: Proxy? = null
 
@@ -27,10 +27,11 @@ class SimpleHttpRequestFactory : HttpRequestFactory {
 		return SimpleBufferingHttpRequest(connection)
 	}
 
-	protected fun openConnection(url: URL, proxy: Proxy?): HttpURLConnection {
-		val connection = when (proxy) {
-			null -> url.openConnection()
-			else -> url.openConnection(proxy)
+	protected open fun openConnection(url: URL, proxy: Proxy?): HttpURLConnection {
+		val connection = if (proxy == null) {
+			url.openConnection()
+		} else {
+			url.openConnection(proxy)
 		}
 		if (connection !is HttpURLConnection) {
 			throw IllegalStateException("HttpURLConnection required for [$url] but got: $connection")
@@ -38,19 +39,14 @@ class SimpleHttpRequestFactory : HttpRequestFactory {
 		return connection
 	}
 
-	protected fun prepareConnection(connection: HttpURLConnection, method: HttpMethod) {
-		if (connectTimeout != null) {
-			connection.connectTimeout = connectTimeout!!.toMillis().toInt()
-		}
-		if (readTimeout != null) {
-			connection.readTimeout = readTimeout!!.toMillis().toInt()
-		}
-
+	protected open fun prepareConnection(connection: HttpURLConnection, method: HttpMethod) {
+		connectTimeout?.let { connection.connectTimeout = it.toMillis().toInt() }
+		readTimeout?.let { connection.readTimeout = it.toMillis().toInt() }
 		connection.doInput = true
-		connection.instanceFollowRedirects = method == HttpMethod.GET
+		connection.instanceFollowRedirects = (method == HttpMethod.GET)
 		connection.doOutput = when (method) {
 			HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH, HttpMethod.DELETE -> true
-			else -> false
+			else                                                                 -> false
 		}
 		connection.requestMethod = method.name
 	}

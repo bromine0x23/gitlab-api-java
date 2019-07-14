@@ -24,7 +24,8 @@ internal class OkHttpHttpRequest(
 
 	override fun doExecute(headers: HttpHeaders, bodyContent: ByteArray): HttpResponse {
 		val request = buildRequest(method, uri, headers, bodyContent)
-		return OkHttpHttpResponse(client.newCall(request).execute())
+		val response = client.newCall(request).execute()
+		return OkHttpHttpResponse(response)
 	}
 
 	private fun buildRequest(method: HttpMethod, uri: URI, headers: HttpHeaders, bodyContent: ByteArray): Request {
@@ -34,12 +35,12 @@ internal class OkHttpHttpRequest(
 		} else {
 			null
 		}
-		val builder = Request.Builder().url(uri.toURL()).method(method.name, body)
-		headers.forEach { (name, values) ->
-			values.forEach { value ->
-				builder.addHeader(name, value)
+		return Request.Builder().url(uri.toURL()).method(method.name, body).apply {
+			headers.forEach { (name, values) ->
+				values.forEach { value ->
+					addHeader(name, value)
+				}
 			}
-		}
-		return builder.build()
+		}.build()
 	}
 }

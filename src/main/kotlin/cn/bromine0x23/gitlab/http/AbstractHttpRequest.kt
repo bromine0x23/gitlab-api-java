@@ -13,9 +13,7 @@ abstract class AbstractHttpRequest : HttpRequest {
 	private var executed: Boolean = false
 
 	override val headers = HttpHeaders()
-		get() {
-			return if (executed) { ReadOnlyHttpHeaders(field) } else { field }
-		}
+		get() = if (executed) { ReadOnlyHttpHeaders(field) } else { field }
 
 	override val body: OutputStream
 		get() {
@@ -25,9 +23,7 @@ abstract class AbstractHttpRequest : HttpRequest {
 
 	override fun execute(): HttpResponse {
 		assert(!executed)
-		val response = doExecute(headers)
-		this.executed = true
-		return response
+		return doExecute(headers).also { this.executed = true }
 	}
 
 	protected abstract fun doGetBody(headers: HttpHeaders): OutputStream

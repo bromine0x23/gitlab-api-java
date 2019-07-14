@@ -28,63 +28,27 @@ class CaseInsensitiveMap<TValue>(
 
 	override fun containsValue(value: TValue): Boolean = target.containsValue(value)
 
-	override fun get(key: String): TValue? {
-		val caseInsensitiveKey = caseInsensitiveKeys[convertKey(key)]
-		if (caseInsensitiveKey != null) {
-			return target[caseInsensitiveKey]
-		}
-		return null
-	}
+	override fun get(key: String): TValue? = caseInsensitiveKeys[convertKey(key)]?.let { target[it] }
 
 	override fun isEmpty(): Boolean = target.isEmpty()
 
 	override val entries: MutableSet<MutableMap.MutableEntry<String, TValue>>
-		get() {
-			var entries = _entries
-			if (entries == null) {
-				entries = Entries(target.entries)
-				this._entries = entries
-			}
-			return entries
-		}
+		get() = _entries ?: Entries(target.entries).also { this._entries = it }
 
 	override val keys: MutableSet<String>
-		get() {
-			var keys = _keys
-			if (keys == null) {
-				keys = Keys(target.keys)
-				this._keys = keys
-			}
-			return keys
-		}
+		get() = _keys ?: Keys(target.keys).also { this._keys = it }
 
 	override val values: MutableCollection<TValue>
-		get() {
-			var values = _values
-			if (values == null) {
-				values = Values(target.values)
-				this._values = values
-			}
-			return values
-		}
+		get() = _values ?: Values(target.values).also { this._values = it }
 
 	override fun put(key: String, value: TValue): TValue? {
 		val oldKey = caseInsensitiveKeys.put(convertKey(key), key)
-		val oldKeyValue: TValue? = when {
-			oldKey != null && oldKey != key -> target.remove(oldKey)
-			else -> null
-		}
+		val oldKeyValue = oldKey?.takeIf { it != key }.let { target.remove(it) }
 		val oldValue = target.put(key, value)
 		return oldKeyValue ?: oldValue
 	}
 
-	override fun remove(key: String): TValue? {
-		val caseInsensitiveKey = removeCaseInsensitiveKey(key)
-		if (caseInsensitiveKey != null) {
-			return target.remove(caseInsensitiveKey)
-		}
-		return null
-	}
+	override fun remove(key: String): TValue? = removeCaseInsensitiveKey(key)?.let { target.remove(it) }
 
 	override fun putAll(from: Map<out String, TValue>) {
 		if (from.isNotEmpty()) {
@@ -97,15 +61,15 @@ class CaseInsensitiveMap<TValue>(
 		target.clear()
 	}
 
-	private fun convertKey(key: String): String = key.toLowerCase(locale)
+	private fun convertKey(key: String) = key.toLowerCase(locale)
 
-	private fun removeCaseInsensitiveKey(key: String): String? = caseInsensitiveKeys.remove(convertKey(key))
+	private fun removeCaseInsensitiveKey(key: String) = caseInsensitiveKeys.remove(convertKey(key))
 
 	private inner class Keys(private val delegate: MutableSet<String>) : MutableSet<String> by delegate {
 
-		override fun iterator(): MutableIterator<String> = KeysIterator()
+		override fun iterator() = KeysIterator()
 
-		override fun remove(element: String): Boolean = this@CaseInsensitiveMap.remove(element) != null
+		override fun remove(element: String) = this@CaseInsensitiveMap.remove(element) != null
 
 		override fun clear() = this@CaseInsensitiveMap.clear()
 	}
@@ -113,7 +77,7 @@ class CaseInsensitiveMap<TValue>(
 	private inner class Values(private val delegate: MutableCollection<TValue>) :
 		MutableCollection<TValue> by delegate {
 
-		override fun iterator(): MutableIterator<TValue> = ValuesIterator()
+		override fun iterator() = ValuesIterator()
 
 		override fun clear() = this@CaseInsensitiveMap.clear()
 	}
@@ -121,15 +85,10 @@ class CaseInsensitiveMap<TValue>(
 	private inner class Entries(private val delegate: MutableSet<MutableMap.MutableEntry<String, TValue>>) :
 		MutableSet<MutableMap.MutableEntry<String, TValue>> by delegate {
 
-		override fun iterator(): MutableIterator<MutableMap.MutableEntry<String, TValue>> = EntriesIterator()
+		override fun iterator() = EntriesIterator()
 
-		override fun remove(element: MutableMap.MutableEntry<String, TValue>): Boolean {
-			if (delegate.remove(element)) {
-				removeCaseInsensitiveKey(element.key)
-				return true
-			}
-			return false
-		}
+		override fun remove(element: MutableMap.MutableEntry<String, TValue>) =
+			delegate.remove(element) && true.also { removeCaseInsensitiveKey(element.key) }
 
 		override fun clear() {
 			caseInsensitiveKeys.clear()
@@ -143,7 +102,7 @@ class CaseInsensitiveMap<TValue>(
 
 		private var last: MutableMap.MutableEntry<String, TValue>? = null
 
-		override fun hasNext(): Boolean = delegate.hasNext()
+		override fun hasNext() = delegate.hasNext()
 
 		override fun remove() {
 			delegate.remove()
@@ -153,22 +112,18 @@ class CaseInsensitiveMap<TValue>(
 			}
 		}
 
-		protected fun nextEntry(): MutableMap.MutableEntry<String, TValue> {
-			val entry = delegate.next()
-			this.last = entry
-			return entry
-		}
+		protected fun nextEntry() = delegate.next().also { this.last = it }
 	}
 
 	private inner class KeysIterator : EntryIterator<String>() {
-		override fun next(): String = nextEntry().key
+		override fun next() = nextEntry().key
 	}
 
 	private inner class ValuesIterator : EntryIterator<TValue>() {
-		override fun next(): TValue = nextEntry().value
+		override fun next() = nextEntry().value
 	}
 
 	private inner class EntriesIterator : EntryIterator<MutableMap.MutableEntry<String, TValue>>() {
-		override fun next(): MutableMap.MutableEntry<String, TValue> = nextEntry()
+		override fun next() = nextEntry()
 	}
 }

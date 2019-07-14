@@ -19,38 +19,28 @@ internal class SimpleHttpResponse(private val connection: HttpURLConnection) : A
 		get() = connection.responseCode
 
 	override val headers: HttpHeaders
-		get() {
-			var headers = _headers
-			if (headers == null) {
-				headers = HttpHeaders().apply {
-					var i = 0
-					while (true) {
-						val name = connection.getHeaderFieldKey(i)
-						if (name == null || name.isBlank()) {
-							break
-						}
-						plusAssign(name to connection.getHeaderField(i))
-						++i
-					}
+		get() = _headers ?: HttpHeaders().apply {
+			var i = 0
+			while (true) {
+				val name = connection.getHeaderFieldKey(i)
+				if (name == null || name.isBlank()) {
+					break
 				}
-				this._headers = headers
+				this += name to connection.getHeaderField(i)
+				++i
 			}
-			return headers
-		}
+		}.also { this._headers = it }
 
 	override val body: InputStream
-		get() {
-			this._body = connection.errorStream ?: connection.inputStream
-			return _body as InputStream
-		}
+		get() = (connection.errorStream ?: connection.inputStream).also { this._body = it }
 
 	override fun close() {
 		try {
 			if (_body == null) {
 				this.body
 			}
-			ByteArray(DEFAULT_BUFFER_SIZE).run {
-				while (_body!!.read(this) != -1) {
+			ByteArray(DEFAULT_BUFFER_SIZE).let {
+				while (_body!!.read(it) != -1) {
 				}
 			}
 			_body!!.close()

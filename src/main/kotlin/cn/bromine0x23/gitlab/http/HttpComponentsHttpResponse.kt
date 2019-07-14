@@ -22,14 +22,9 @@ internal class HttpComponentsHttpResponse(private val response: HttpResponse) : 
 		get() = response.statusLine.statusCode
 
 	override val headers: HttpHeaders
-		get() {
-			var headers = _headers
-			if (headers == null) {
-				headers = HttpHeaders().apply { response.allHeaders.forEach { this += it.name to it.value } }
-				this._headers = headers
-			}
-			return headers
-		}
+		get() = _headers ?: HttpHeaders().apply {
+			response.allHeaders.forEach { this += it.name to it.value }
+		}.also { this._headers = it }
 
 	override val body: InputStream
 		get() = response.entity?.content ?: ByteArrayInputStream(EMPTY_BYTE_ARRAY)

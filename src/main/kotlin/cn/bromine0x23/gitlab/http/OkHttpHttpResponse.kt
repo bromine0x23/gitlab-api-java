@@ -19,14 +19,9 @@ internal class OkHttpHttpResponse(private val response: Response) : AbstractHttp
 		get() = response.code
 
 	override val headers: HttpHeaders
-		get() {
-			var headers = _headers
-			if (headers == null) {
-				headers = HttpHeaders().apply { response.headers.forEach(this::plusAssign) }
-				this._headers = headers
-			}
-			return headers
-		}
+		get() = _headers ?: HttpHeaders().apply {
+			response.headers.forEach(this::plusAssign)
+		}.also { this._headers = it }
 
 	override val body: InputStream
 		get() = response.body?.byteStream() ?: ByteArrayInputStream(EMPTY_BYTE_ARRAY)
